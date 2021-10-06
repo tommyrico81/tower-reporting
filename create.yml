@@ -1,0 +1,39 @@
+---
+- name: Gather facts and report on AAP2.x hosts count
+  become_user: root
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars:
+    fileName: "{{ ansible_date_time.iso8601_basic_short }}.json"
+  tasks:
+    - name: Retrieve hosts automated since
+      ansible.builtin.command: /usr/bin/awx-manage host_metric --since {{ since_date }} --json
+      register: host_metric
+
+    - name: Print hosts automated since
+      ansible.builtin.debug:
+        var: host_metric.stdout
+
+    - name: Create a reports directory in /tmp if it does not exist
+      ansible.builtin.file:
+        path: /tmp/reports
+        state: directory
+        mode: '0755'
+
+    - name: Create file in reports directory
+      ansible.builtin.copy:
+        content: "{{ host_metric.stdout }}"
+        dest: "/tmp/reports/{{ fileName }}"
+
+    - name: Insert missing json header
+      ansible.builtin.lineinfile:
+        path: "/tmp/reports/{{ fileName }}"
+        insertbefore: "BOF"
+        line: '{ "host_metric":'
+
+    - name: Insert missing json ender
+      ansible.builtin.lineinfile:
+        path: "/tmp/reports/{{ fileName }}"
+        insertafter: "EOF"
+        line: '}'

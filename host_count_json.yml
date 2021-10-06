@@ -1,0 +1,14 @@
+---
+- name: Gather facts and report on AAP2.x hosts count
+  become_user: root
+  hosts: all
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: Retrieve hosts automated since
+      ansible.builtin.command: /usr/bin/awx-manage host_metric --since {{ since_date }} --json
+      register: host_metric
+
+    - name: Print hosts automated since
+      ansible.builtin.debug:
+        var: host_metric.stdout_lines.0
